@@ -1,45 +1,96 @@
 # escape=`
+# modified from original source https://github.com/Microsoft/iis-docker/issues/33#issuecomment-373124539
 
-ARG REPO=mcr.microsoft.com/dotnet/framework/runtime
-FROM $REPO:4.8-20220208-windowsservercore-ltsc2016
-
-SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
+FROM mcr.microsoft.com/dotnet/framework/aspnet:4.8-20220208-windowsservercore-ltsc2016
 
 RUN Add-WindowsFeature Web-Server; `
     Add-WindowsFeature NET-Framework-45-ASPNET; `
     Add-WindowsFeature Web-Asp-Net45; `
     Remove-Item -Recurse C:\inetpub\wwwroot\*; `
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    Invoke-WebRequest -Uri https://dotnetbinaries.blob.core.windows.net/servicemonitor/2.0.1.10/ServiceMonitor.exe -OutFile C:\ServiceMonitor.exe; `
-    &$Env:windir\Microsoft.NET\Framework64\v4.0.30319\ngen update; `
-    &$Env:windir\Microsoft.NET\Framework\v4.0.30319\ngen update
+    Invoke-WebRequest -UseBasicParsing -Uri https://dotnetbinaries.blob.core.windows.net/servicemonitor/2.0.1.10/ServiceMonitor.exe -OutFile C:\ServiceMonitor.exe;
 
-# Install 2.9.0 Roslyn compilers
-RUN [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    Invoke-WebRequest https://api.nuget.org/packages/microsoft.net.compilers.2.9.0.nupkg -OutFile C:\microsoft.net.compilers.2.9.0.zip; `
-    Expand-Archive -Path C:\microsoft.net.compilers.2.9.0.zip -DestinationPath C:\RoslynCompilers; `
-    Remove-Item C:\microsoft.net.compilers.2.9.0.zip -Force; `
-    &$Env:windir\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers\tools\csc.exe /ExeConfig:C:\RoslynCompilers\tools\csc.exe | `
-    &$Env:windir\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers\tools\vbc.exe /ExeConfig:C:\RoslynCompilers\tools\vbc.exe | `
-    &$Env:windir\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers\tools\VBCSCompiler.exe /ExeConfig:C:\RoslynCompilers\tools\VBCSCompiler.exe | `
-    &$Env:windir\Microsoft.NET\Framework\v4.0.30319\ngen install C:\RoslynCompilers\tools\csc.exe /ExeConfig:C:\RoslynCompilers\tools\csc.exe | `
-    &$Env:windir\Microsoft.NET\Framework\v4.0.30319\ngen install C:\RoslynCompilers\tools\vbc.exe /ExeConfig:C:\RoslynCompilers\tools\vbc.exe | `
-    &$Env:windir\Microsoft.NET\Framework\v4.0.30319\ngen install C:\RoslynCompilers\tools\VBCSCompiler.exe  /ExeConfig:C:\RoslynCompilers\tools\VBCSCompiler.exe
+# dotnet 2.1 host bundle
+RUN powershell -Command `
+    Invoke-WebRequest -UseBasicParsing -Uri "https://download.visualstudio.microsoft.com/download/pr/cf7b17e3-ed6d-4ded-8ae6-9f83ffaaca98/9d2ca844baa4a4a9ed83861ffc8e293e/dotnet-hosting-2.1.30-win.exe" -OutFile "dotnet-hosting-2.1.30-win.exe"; `
+    $aspnetcore_sha512 = '70c6b46b5df73ff493d087831b4254d4c3c5c1977a0325d90f6078c725129b71245bd8f886ab72c18113697c592b80714493f5693f2f4d6f5ccf4703bb58d336'; `
+    if ((Get-FileHash ./dotnet-hosting-2.1.30-win.exe -Algorithm sha512).Hash -ne $aspnetcore_sha512) { `
+        Write-Host 'CHECKSUM VERIFICATION FAILED!'; `
+        exit 1; `
+    }; `
+     `
+    Write-Host 'CHECKSUM VERIFICATION PASS!';
 
-# Install 3.6.0 Roslyn compilers
-RUN [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; `
-    Invoke-WebRequest https://api.nuget.org/packages/microsoft.net.compilers.3.6.0.nupkg -OutFile C:\microsoft.net.compilers.3.6.0.zip; `
-    Expand-Archive -Path C:\microsoft.net.compilers.3.6.0.zip -DestinationPath C:\RoslynCompilers-3.6.0; `
-    Remove-Item C:\microsoft.net.compilers.3.6.0.zip -Force; `
-    &$Env:windir\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\csc.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\csc.exe | `
-    &$Env:windir\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\vbc.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\vbc.exe | `
-    &$Env:windir\Microsoft.NET\Framework64\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\VBCSCompiler.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\VBCSCompiler.exe | `
-    &$Env:windir\Microsoft.NET\Framework\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\csc.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\csc.exe | `
-    &$Env:windir\Microsoft.NET\Framework\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\vbc.exe /ExeConfig:C:\RoslynCompilers-3.6.0\tools\vbc.exe | `
-    &$Env:windir\Microsoft.NET\Framework\v4.0.30319\ngen install C:\RoslynCompilers-3.6.0\tools\VBCSCompiler.exe  /ExeConfig:C:\RoslynCompilers-3.6.0\tools\VBCSCompiler.exe
+RUN ./dotnet-hosting-2.1.30-win.exe /quiet /install
 
-ENV ROSLYN_COMPILER_LOCATION=C:\RoslynCompilers-3.6.0\tools
+RUN powershell -Command Remove-Item -Force ./dotnet-hosting-2.1.30-win.exe
+
+# dotnet 3.1 host bundle
+RUN powershell -Command `
+    Invoke-WebRequest -UseBasicParsing -Uri "https://download.visualstudio.microsoft.com/download/pr/4f5c5cdc-1354-415b-a3a2-b5c94d6ca6eb/73841934839d13ba91407f3259a8d1b4/dotnet-hosting-3.1.21-win.exe" -OutFile ".\dotnet-hosting-3.1.21-win.exe"; `
+    $aspnetcore_sha512 = 'ab41bbb191d6fe619d648800d72e08396d829fbad28bc61a813af311fffabf3dab4b67f28e33f7f2eb37c18169046e2411414b80104bb78aed3f61a4ca3759de'; `
+    if ((Get-FileHash ./dotnet-hosting-3.1.21-win.exe -Algorithm sha512).Hash -ne $aspnetcore_sha512) { `
+        Write-Host 'CHECKSUM VERIFICATION FAILED!'; `
+        exit 1; `
+    }; `
+     `
+    Write-Host 'CHECKSUM VERIFICATION PASS!';
+
+RUN ./dotnet-hosting-3.1.21-win.exe /quiet /install
+
+RUN powershell -Command Remove-Item -Force ./dotnet-hosting-3.1.21-win.exe
+
+# dotnet 5.0 host bundle
+RUN powershell -Command `
+    Invoke-WebRequest -UseBasicParsing -Uri "https://download.visualstudio.microsoft.com/download/pr/5adf4f36-aff5-447f-99db-86eae913d4eb/b71f76ea31156438499da1d419c577ff/dotnet-hosting-5.0.14-win.exe" -OutFile "dotnet-hosting-5.0.14-win.exe"; `
+    $aspnetcore_sha512 = '9af148ffb81cacab298798772f11882e9f107d7c40fbcd39e23311cb24541e951cc5640fed2e69e8e5eab3db126f5bf6011fec2b359c42982dda6e188fee6d92'; `
+    if ((Get-FileHash ./dotnet-hosting-5.0.14-win.exe -Algorithm sha512).Hash -ne $aspnetcore_sha512) { `
+        Write-Host 'CHECKSUM VERIFICATION FAILED!'; `
+        exit 1; `
+    }; `
+     `
+    Write-Host 'CHECKSUM VERIFICATION PASS!';
+
+RUN ./dotnet-hosting-5.0.14-win.exe /quiet /install
+
+RUN powershell -Command Remove-Item -Force ./dotnet-hosting-5.0.14-win.exe
+
+# dotnet 6.0 host bundle
+RUN powershell -Command `
+    Invoke-WebRequest -UseBasicParsing -Uri "https://download.visualstudio.microsoft.com/download/pr/e77fd80d-b12b-4d8c-9dc2-a22007f44cc8/ad05622589430ca580b7309513f139fe/dotnet-hosting-6.0.2-win.exe" -OutFile "dotnet-hosting-6.0.2-win.exe"; `
+    $aspnetcore_sha512 = '4dc51d47ce213ca154761616e576127102a9bc35bcf74fff565083d26fd9bcec66f20bcf0ba4c0e9a3fcf882531900b1ed580652a171d5a7f542c86df2a07994'; `
+    if ((Get-FileHash ./dotnet-hosting-6.0.2-win.exe -Algorithm sha512).Hash -ne $aspnetcore_sha512) { `
+        Write-Host 'CHECKSUM VERIFICATION FAILED!'; `
+        exit 1; `
+    }; `
+     `
+    Write-Host 'CHECKSUM VERIFICATION PASS!';
+
+RUN ./dotnet-hosting-6.0.2-win.exe /quiet /install
+
+RUN powershell -Command Remove-Item -Force ./dotnet-hosting-6.0.2-win.exe
+
+RUN Import-Module WebAdministration; `
+    New-Item "IIS:\AppPools\NetCoreApp21"; `
+    Set-ItemProperty "IIS:\AppPools\NetCoreApp21" -Name processModel.idleTimeout -value ([TimeSpan]::FromMinutes(0)); `
+    Set-ItemProperty "IIS:\AppPools\NetCoreApp21" -Name managedRuntimeVersion -value ''; `
+    New-Item "IIS:\AppPools\NetCoreApp31"; `
+    Set-ItemProperty "IIS:\AppPools\NetCoreApp31" -Name processModel.idleTimeout -value ([TimeSpan]::FromMinutes(0)); `
+    Set-ItemProperty "IIS:\AppPools\NetCoreApp31" -Name managedRuntimeVersion -value ''; `
+    New-Item "IIS:\AppPools\NetCoreApp50"; `
+    Set-ItemProperty "IIS:\AppPools\NetCoreApp50" -Name processModel.idleTimeout -value ([TimeSpan]::FromMinutes(0)); `
+    Set-ItemProperty "IIS:\AppPools\NetCoreApp50" -Name managedRuntimeVersion -value ''; `
+    New-Item "IIS:\AppPools\NetCoreApp60"; `
+    Set-ItemProperty "IIS:\AppPools\NetCoreApp60" -Name processModel.idleTimeout -value ([TimeSpan]::FromMinutes(0)); `
+    Set-ItemProperty "IIS:\AppPools\NetCoreApp60" -Name managedRuntimeVersion -value ''; `
+    New-Item "IIS:\AppPools\NetApp48"; `
+    Set-ItemProperty "IIS:\AppPools\NetApp48 -Name processModel.idleTimeout -value ([TimeSpan]::FromMinutes(0)); `
+    Set-ItemProperty "IIS:\AppPools\NetApp48" -Name managedRuntimeVersion -value 'v4.0';
+
+RUN Remove-WebSite -Name 'Default Web Site'; ` 
+   New-Item -Path 'C:/Application' -Type Directory; `
+   New-Website -Name 'Application' -Port 80 -PhysicalPath 'C:/Application'
 
 EXPOSE 80
 
 ENTRYPOINT ["C:\\ServiceMonitor.exe", "w3svc"]
+
