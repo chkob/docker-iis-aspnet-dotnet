@@ -118,9 +118,16 @@ RUN powershell -Command `
     Set-ItemProperty -Path IIS:\AppPools\NetApp48 -Name managedRuntimeVersion -value 'v4.0';
 
 RUN powershell -Command `
+    Stop-WebAppPool -Name "NetCoreApp21"; `
+    Stop-WebAppPool -Name "NetCoreApp31"; `
+    Stop-WebAppPool -Name "NetCoreApp50"; `
+    Stop-WebAppPool -Name "NetCoreApp60"; `
+    Stop-WebAppPool -Name "NetApp48";
+
+RUN powershell -Command `
     Remove-WebSite -Name 'Default Web Site'; `
     New-Item -Path 'C:/Application' -Type Directory; `
-    New-Website -Name 'Application' -Port 80 -PhysicalPath 'C:/Application'
+    New-Website -Name 'Application' -Port 80 -PhysicalPath 'C:/Application';
 
 EXPOSE 80
 

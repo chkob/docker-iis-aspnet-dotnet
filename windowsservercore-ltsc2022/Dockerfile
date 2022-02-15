@@ -87,9 +87,16 @@ RUN Import-Module WebAdministration; `
     Set-ItemProperty "IIS:\AppPools\NetApp48 -Name processModel.idleTimeout -value ([TimeSpan]::FromMinutes(0)); `
     Set-ItemProperty "IIS:\AppPools\NetApp48" -Name managedRuntimeVersion -value 'v4.0';
 
+RUN powershell -Command `
+    Stop-WebAppPool -Name "NetCoreApp21"; `
+    Stop-WebAppPool -Name "NetCoreApp31"; `
+    Stop-WebAppPool -Name "NetCoreApp50"; `
+    Stop-WebAppPool -Name "NetCoreApp60"; `
+    Stop-WebAppPool -Name "NetApp48";
+
 RUN Remove-WebSite -Name 'Default Web Site'; ` 
    New-Item -Path 'C:/Application' -Type Directory; `
-   New-Website -Name 'Application' -Port 80 -PhysicalPath 'C:/Application'
+   New-Website -Name 'Application' -Port 80 -PhysicalPath 'C:/Application';
 
 EXPOSE 80
 
