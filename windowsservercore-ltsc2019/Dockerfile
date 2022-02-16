@@ -23,6 +23,7 @@ RUN powershell -Command `
 RUN ./dotnet-hosting-2.1.30-win.exe /quiet /install
 
 RUN powershell -Command Remove-Item -Force ./dotnet-hosting-2.1.30-win.exe
+RUN powershell Remove-Item -Force -Recurse ${Env:TEMP}\*
 
 # dotnet 3.1 host bundle
 RUN powershell -Command `
@@ -38,6 +39,7 @@ RUN powershell -Command `
 RUN ./dotnet-hosting-3.1.22-win.exe /quiet /install
 
 RUN powershell -Command Remove-Item -Force ./dotnet-hosting-3.1.22-win.exe
+RUN powershell Remove-Item -Force -Recurse ${Env:TEMP}\*
 
 # dotnet 5.0 host bundle
 RUN powershell -Command `
@@ -53,6 +55,7 @@ RUN powershell -Command `
 RUN ./dotnet-hosting-5.0.14-win.exe /quiet /install
 
 RUN powershell -Command Remove-Item -Force ./dotnet-hosting-5.0.14-win.exe
+RUN powershell Remove-Item -Force -Recurse ${Env:TEMP}\*
 
 # dotnet 6.0 host bundle
 RUN powershell -Command `
@@ -68,6 +71,7 @@ RUN powershell -Command `
 RUN ./dotnet-hosting-6.0.2-win.exe /quiet /install
 
 RUN powershell -Command Remove-Item -Force ./dotnet-hosting-6.0.2-win.exe
+RUN powershell Remove-Item -Force -Recurse ${Env:TEMP}\*
 
 RUN Import-Module WebAdministration; `
     New-Item "IIS:\AppPools\NetCoreApp21"; `
