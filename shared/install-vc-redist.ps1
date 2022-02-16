@@ -1,2 +1,2 @@
 import-module .\vscppredistcheck.psm1
-Install-VSRedistPackages -VersionList "mscpp2022x86,mscpp2022x64"
+Install-VSRedistPackages -VersionList "mscpp2019x86,mscpp2019x64"
