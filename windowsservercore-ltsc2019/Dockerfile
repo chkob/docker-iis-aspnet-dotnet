@@ -13,6 +13,7 @@ RUN Invoke-WebRequest -UseBasicParsing -Uri https://raw.githubusercontent.com/ch
     Invoke-WebRequest -UseBasicParsing -Uri https://raw.githubusercontent.com/chkob/docker-iis-aspnet-dotnet/add-dot-net-core/shared/install-vc-redist.ps1 -OutFile "install-vc-redist.ps1";
 
 RUN powershell .\install-vc-redist.ps1
+RUN powershell Remove-Item -Force -Recurse "~\Downloads"
 
 # dotnet 2.1 host bundle
 RUN powershell -Command `
