@@ -9,6 +9,11 @@ RUN Add-WindowsFeature Web-Server; `
     Remove-Item -Recurse C:\inetpub\wwwroot\*; `
     Invoke-WebRequest -UseBasicParsing -Uri https://dotnetbinaries.blob.core.windows.net/servicemonitor/2.0.1.10/ServiceMonitor.exe -OutFile C:\ServiceMonitor.exe;
 
+RUN Invoke-WebRequest -UseBasicParsing -Uri https://raw.githubusercontent.com/chkob/PowershellVsRedistInstaller/update_2022/vscppredistcheck.psm1 -OutFile "vscppredistcheck.psm1"; `
+    Invoke-WebRequest -UseBasicParsing -Uri https://raw.githubusercontent.com/chkob/docker-iis-aspnet-dotnet/add-dot-net-core/shared/install-vc-redist.ps1 -OutFile "install-vc-redist.ps1";
+
+RUN powershell .\install-vc-redist.ps1
+
 # dotnet 2.1 host bundle
 RUN powershell -Command `
     Invoke-WebRequest -UseBasicParsing -Uri "https://download.visualstudio.microsoft.com/download/pr/cf7b17e3-ed6d-4ded-8ae6-9f83ffaaca98/9d2ca844baa4a4a9ed83861ffc8e293e/dotnet-hosting-2.1.30-win.exe" -OutFile "dotnet-hosting-2.1.30-win.exe"; `
