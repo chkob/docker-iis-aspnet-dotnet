@@ -9,6 +9,8 @@ RUN Add-WindowsFeature Web-Server; `
     Remove-Item -Recurse C:\inetpub\wwwroot\*; `
     Invoke-WebRequest -UseBasicParsing -Uri https://dotnetbinaries.blob.core.windows.net/servicemonitor/2.0.1.10/ServiceMonitor.exe -OutFile C:\ServiceMonitor.exe;
 
+ENV DOT_NET_CORE_LIST="dotnet_core_2_1,dotnet_core_3_1_22,dotnet_core_5_0,dotnet_core_6_0"
+
 RUN Invoke-WebRequest -UseBasicParsing -Uri https://raw.githubusercontent.com/chkob/docker-iis-aspnet-dotnet/add-dot-net-core/shared/dotnetcorecheck.psm1 -OutFile "dotnetcorecheck.psm1"; `
     Invoke-WebRequest -UseBasicParsing -Uri https://raw.githubusercontent.com/chkob/docker-iis-aspnet-dotnet/add-dot-net-core/shared/install-dotnet-core.ps1 -OutFile "install-dotnet-core.ps1";
 
