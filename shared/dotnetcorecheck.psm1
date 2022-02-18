@@ -67,7 +67,7 @@ param (
            Start-Process -FilePath $redistInfo.OutPutFile -ArgumentList "$($redistInfo.SilentInstallArgs)" -Wait -NoNewWindow | Wait-Process;
            Remove-Item -Force $redistInfo.OutPutFile;
            Remove-Item -Force -Recurse ${Env:TEMP}\*;
-           Write-Host "$redistInfo.Description installed."
+           Write-Host $redistInfo.Description " installed.";
         }
     }
     catch {
